@@ -23,7 +23,8 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    
+    /* Танзими дурусти Paths БЕ истифодаи baseUrl */
     "paths": {
       "@/*": [
         "./src/*"
