@@ -1,0 +1,110 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "retry": "Повторить",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "add": "Добавить",
+    "search": "Поиск",
+    "noResults": "Результаты не найдены",
+    "results": "Результатов",
+    "outOfStock": "Нет в наличии",
+    "inStock": "в наличии",
+    "actions": "Действия",
+    "confirm": "Подтвердить"
+  },
+  "nav": {
+    "dashboard": "Дашборд",
+    "orders": "Заказы",
+    "products": "Товары",
+    "categories": "Категории",
+    "colors": "Цвета",
+    "settings": "Настройки",
+    "logout": "Выйти"
+  },
+  "products": {
+    "title": "Товары",
+    "subtitle": "Управляйте товарами и ценами",
+    "addProduct": "Добавить товар",
+    "searchPlaceholder": "Поиск товаров...",
+    "sortBy": "Сортировать:",
+    "sortNewest": "Сначала новые",
+    "sortOldest": "Сначала старые",
+    "sortPriceLow": "Цена: по возрастанию",
+    "sortPriceHigh": "Цена: по убыванию",
+    "editSelected": "Изменить выбранное",
+    "deleteSelected": "Удалить выбранное",
+    "product": "Товар",
+    "inventory": "На складе",
+    "category": "Категория",
+    "price": "Цена",
+    "noProductsFound": "Товары не найдены",
+    "noProductsDesc": "Попробуйте изменить фильтры или поисковый запрос.",
+    "loadingProducts": "Загрузка товаров...",
+    "deleteConfirm": "Вы уверены, что хотите удалить",
+    "deleteMultipleConfirm": "Вы уверены, что хотите удалить {{count}} выбранных товаров?",
+    "uncategorized": "Без категории",
+    "totalResults": "{{count}} Результатов"
+  },
+  "orders": {
+    "title": "Заказы",
+    "subtitle": "Управляйте заказами и отслеживайте их статус.",
+    "noOrders": "Заказов пока нет",
+    "noOrdersDesc": "Все предстоящие заказы из вашего магазина будут отображаться здесь.",
+    "addOrder": "Добавить заказ вручную"
+  },
+  "dashboard": {
+    "title": "Дашборд",
+    "topProducts": "Топ продаж",
+    "recentTransactions": "Последние транзакции",
+    "seeAll": "Смотреть все",
+    "totalRevenue": "Общая выручка",
+    "totalOrders": "Всего заказов",
+    "totalProducts": "Всего товаров",
+    "totalCustomers": "Всего клиентов"
+  },
+  "login": {
+    "title": "Войти",
+    "subtitle": "Добро пожаловать! Введите ваши данные для входа.",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "forgotPassword": "Забыли пароль?",
+    "signIn": "Войти",
+    "signingIn": "Вход...",
+    "invalidCredentials": "Неверный адрес электронной почты или пароль."
+  },
+  "categories": {
+    "title": "Категории",
+    "subtitle": "Управление категориями скоро появится."
+  },
+  "colors": {
+    "title": "Цвета",
+    "subtitle": "Управление цветами скоро появится.",
+    "newColor": "Новый цвет",
+    "colorName": "Название цвета",
+    "colorNamePlaceholder": "например, Темно-синий",
+    "hexCode": "Код цвета (необязательно)",
+    "creating": "Создание...",
+    "createColor": "Создать цвет"
+  },
+  "settings": {
+    "title": "Настройки",
+    "subtitle": "Глобальные настройки скоро появятся."
+  },
+  "other": {
+    "categories": "Категории",
+    "brands": "Бренды",
+    "banners": "Баннеры",
+    "addNew": "+ Добавить",
+    "bannersComingSoon": "Функция баннеров скоро появится."
+  },
+  "brands": {
+    "addBrand": "Добавить бренд",
+    "editBrand": "Изменить бренд",
+    "brandName": "Название бренда",
+    "brandNamePlaceholder": "например, Samsung",
+    "create": "Создать"
+  }
+}

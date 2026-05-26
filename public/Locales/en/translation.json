@@ -1,0 +1,110 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "noResults": "No results found",
+    "results": "Results",
+    "outOfStock": "Out of Stock",
+    "inStock": "in stock",
+    "actions": "Action",
+    "confirm": "Confirm"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "orders": "Orders",
+    "products": "Products",
+    "categories": "Categories",
+    "colors": "Colors",
+    "settings": "Settings",
+    "logout": "Log Out"
+  },
+  "products": {
+    "title": "Products",
+    "subtitle": "Manage your product inventory and pricing",
+    "addProduct": "Add Product",
+    "searchPlaceholder": "Search products...",
+    "sortBy": "Sort by:",
+    "sortNewest": "Newest",
+    "sortOldest": "Oldest",
+    "sortPriceLow": "Price: Low–High",
+    "sortPriceHigh": "Price: High–Low",
+    "editSelected": "Edit selected",
+    "deleteSelected": "Delete selected",
+    "product": "Product",
+    "inventory": "Inventory",
+    "category": "Category",
+    "price": "Price",
+    "noProductsFound": "No products found",
+    "noProductsDesc": "Try adjusting your filters or search query.",
+    "loadingProducts": "Loading products...",
+    "deleteConfirm": "Are you sure you want to delete",
+    "deleteMultipleConfirm": "Are you sure you want to delete {{count}} selected products?",
+    "uncategorized": "Uncategorized",
+    "totalResults": "{{count}} Results"
+  },
+  "orders": {
+    "title": "Orders",
+    "subtitle": "Manage and track your customer orders.",
+    "noOrders": "No Orders Yet",
+    "noOrdersDesc": "All the upcoming orders from your store will be visible in this page.",
+    "addOrder": "Add order manually"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "topProducts": "Top Selling Products",
+    "recentTransactions": "Recent Transactions",
+    "seeAll": "See All",
+    "totalRevenue": "Total Revenue",
+    "totalOrders": "Total Orders",
+    "totalProducts": "Total Products",
+    "totalCustomers": "Total Customers"
+  },
+  "login": {
+    "title": "Sign In",
+    "subtitle": "Welcome back! Enter your credentials to continue.",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "invalidCredentials": "Invalid email or password."
+  },
+  "categories": {
+    "title": "Categories",
+    "subtitle": "Category management is coming soon."
+  },
+  "colors": {
+    "title": "Colors",
+    "subtitle": "Color management is coming soon.",
+    "newColor": "New color",
+    "colorName": "Color name",
+    "colorNamePlaceholder": "e.g. Navy Blue",
+    "hexCode": "Hex Code (Optional)",
+    "creating": "Creating…",
+    "createColor": "Create color"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Global settings are coming soon."
+  },
+  "other": {
+    "categories": "Categories",
+    "brands": "Brands",
+    "banners": "Banners",
+    "addNew": "+ Add new",
+    "bannersComingSoon": "Banners feature is coming soon."
+  },
+  "brands": {
+    "addBrand": "Add brand",
+    "editBrand": "Edit brand",
+    "brandName": "Brand name",
+    "brandNamePlaceholder": "e.g. Samsung",
+    "create": "Create"
+  }
+}
