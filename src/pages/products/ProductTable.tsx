@@ -127,7 +127,7 @@ export default function ProductTable({
                     </td>
                     <td className="py-4">
                       <div className={cn('flex', 'items-center', 'gap-4')}>
-                        <div className={cn('h-12', 'w-12', 'flex-shrink-0', 'rounded-lg', 'overflow-hidden', 'bg-zinc-100', 'dark:bg-zinc-800', 'flex', 'items-center', 'justify-center', 'border', 'border-zinc-100', 'dark:border-zinc-800')}>
+                        <div className={cn('h-12', 'w-12', 'shrink-0', 'rounded-lg', 'overflow-hidden', 'bg-zinc-100', 'dark:bg-zinc-800', 'flex', 'items-center', 'justify-center', 'border', 'border-zinc-100', 'dark:border-zinc-800')}>
                             {imageSource ? (
                               <img
                                 src={getImageUrl(imageSource)}
@@ -167,7 +167,7 @@ export default function ProductTable({
                           className={cn('text-[#3b82f6]', 'hover:text-blue-700', 'transition-colors')}
                           title={t('common.edit')}
                         >
-                          <Pencil size={18} className="stroke-[2]" />
+                          <Pencil size={18} className="stroke-2" />
                         </button>
                         <button
                           onClick={() => onDeleteClick(product)}
@@ -178,7 +178,7 @@ export default function ProductTable({
                           {deleteLoading && toDeleteId === product.id ? (
                             <Loader2 size={18} className="animate-spin" />
                           ) : (
-                            <Trash2 size={18} className="stroke-[2]" />
+                            <Trash2 size={18} className="stroke-2" />
                           )}
                         </button>
                       </div>

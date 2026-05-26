@@ -102,7 +102,7 @@ export default function Layout() {
                 <>
                   <div className={cn('flex', 'items-center', 'gap-4')}>
                     <span className={isActive ? 'text-[#586380]' : 'text-gray-400'}>
-                      <Icon size={20} className="stroke-[2]" />
+                      <Icon size={20} className="stroke-2" />
                     </span>
                     <span className={isActive ? 'font-medium' : ''}>{label}</span>
                   </div>
