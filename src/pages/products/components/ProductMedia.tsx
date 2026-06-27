@@ -1,6 +1,7 @@
 import React from 'react';
 import { Upload, X } from 'lucide-react';
 import { getImageUrl, type ProductImage } from '@/store/productsSlice';
+import { cn } from "@/lib/utils";
 
 interface ProductMediaProps {
   images: File[];
@@ -12,6 +13,7 @@ interface ProductMediaProps {
   fileRef: React.RefObject<HTMLInputElement | null>;
   removeNewImage: (index: number) => void;
   removeExistingImage?: (id: number) => void;
+  imagesError?: string;
 }
 
 export default function ProductMedia({
@@ -19,11 +21,12 @@ export default function ProductMedia({
   isDragging, setIsDragging,
   handleDrop, handleFiles,
   fileRef,
-  removeNewImage, removeExistingImage
+  removeNewImage, removeExistingImage,
+  imagesError
 }: ProductMediaProps) {
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 mb-6">
-      <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Media</h3>
+    <div className={cn('bg-white', 'dark:bg-zinc-900', 'rounded-xl', 'border', imagesError ? 'border-red-300' : 'border-zinc-200 dark:border-zinc-800', 'shadow-sm', 'p-5', 'sm:p-6', 'mb-6')}>
+      <h3 className={cn('text-lg', 'font-semibold', 'text-zinc-900', 'dark:text-white', 'mb-4')}>Media</h3>
 
       <div
         className={`relative flex flex-col items-center justify-center p-8 sm:p-12 border-2 border-dashed rounded-xl transition-all duration-200 ease-in-out cursor-pointer group ${

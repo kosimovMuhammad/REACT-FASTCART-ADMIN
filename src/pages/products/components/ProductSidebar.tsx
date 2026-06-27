@@ -1,5 +1,6 @@
 import { Plus, X } from 'lucide-react';
 import type { Color } from '@/store/colorsSlice';
+import { cn } from "@/lib/utils";
 
 export const COLOR_HEX: Record<string, string> = {
   red: '#ef4444', blue: '#3b82f6', green: '#22c55e', yellow: '#eab308',
@@ -28,11 +29,13 @@ interface ProductSidebarProps {
   setTagInput: (v: string) => void;
   addTag: () => void;
   removeTag: (t: string) => void;
+  colorIdError?: string;
 }
 
 export default function ProductSidebar({
   colors, colorIds, toggleColor, setShowColorMdl,
-  tags, tagInput, setTagInput, addTag, removeTag
+  tags, tagInput, setTagInput, addTag, removeTag,
+  colorIdError
 }: ProductSidebarProps) {
   return (
     <div className="space-y-6">
@@ -47,9 +50,9 @@ export default function ProductSidebar({
             <Plus size={12} /> Create new
           </button>
         </div>
-        
-        <div className="flex flex-wrap gap-3">
-          {colors.slice(0, 12).map(c => {
+        {colorIdError && <span className={cn('text-xs', 'text-red-500', 'mb-2', 'block')}>{colorIdError}</span>}
+        <div className={cn('flex', 'flex-wrap', 'gap-2', 'max-h-48', 'overflow-y-auto', 'p-1')}>
+          {colors.map(c => {
             const isSelected = colorIds.includes(c.id);
             const hex = colorToHex(c.colorName);
             const isWhite = hex === '#f8fafc' || hex.toLowerCase() === '#ffffff';

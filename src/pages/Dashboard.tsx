@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
-import { TrendingUp, DollarSign, ShoppingBag } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { TrendingUp, DollarSign, ShoppingBag, Users } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { type Product } from '@/store/productsSlice';
+import { fetchUsers } from '@/store/usersSlice';
+import type { AppDispatch, RootState } from '@/store';
 
 import StatCard from './dashboard/StatCard';
 import DashboardChart from './dashboard/DashboardChart';
@@ -11,10 +14,13 @@ import DashboardTopUnits from './dashboard/DashboardTopUnits';
 import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
+  const dispatch = useDispatch<AppDispatch>();
   const { products, loading, error, fetchProducts } = useProducts();
+  const { total: totalUsers, loading: usersLoading } = useSelector((s: RootState) => s.users);
 
   useEffect(() => {
     fetchProducts({ pageSize: 5 });
+    dispatch(fetchUsers({ PageSize: 1, PageNumber: 1 }));
   }, []);
 
   const typedProducts = products as unknown as Product[];
@@ -26,7 +32,7 @@ export default function Dashboard() {
         <p className={cn('text-sm', 'text-zinc-500', 'dark:text-zinc-400', 'mt-1')}>Welcome back! Here's what's happening today.</p>
       </div>
 
-      <div className={cn('grid', 'grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3', 'gap-6')}>
+      <div className={cn('grid', 'grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-4', 'gap-6')}>
         <StatCard
           icon={TrendingUp}
           label="Sales"
@@ -44,9 +50,16 @@ export default function Dashboard() {
         <StatCard
           icon={ShoppingBag}
           label="Profit"
-          value="$32.1k"
+          value="$52.3k"
           color="#22c55e"
           bg="#f0fdf4"
+        />
+        <StatCard
+          icon={Users}
+          label="Users"
+          value={usersLoading ? '...' : String(totalUsers)}
+          color="#3b82f6"
+          bg="#eff6ff"
         />
       </div>
 

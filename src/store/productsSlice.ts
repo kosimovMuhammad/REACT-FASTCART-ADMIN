@@ -1,29 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { RootState } from './index';
+import axiosInstance from '@/api/axiosInstance';
 
-const BASE = 'https://fastcard-1-o23z.onrender.com/api';
+export const IMAGE_URL =
+  (import.meta.env.VITE_IMAGE_URL as string) ||
+  `${import.meta.env.VITE_API_URL as string}/images/`;
 
-// Папкаи доимии расмҳо (аз рӯи супориши шумо)
-export const IMAGE_URL = 'https://fastcard-1-o23z.onrender.com/images/';
-
-/**
- * Convert any image path or name returned by the API to a full absolute URL.
- * Handles: absolute URLs, relative paths, blob:, data: URIs, and simple filenames.
- */
 export const getImageUrl = (imageName?: string | null): string | undefined => {
   if (!imageName) return undefined;
-  // Агар расм аллакай URL-и пурра дошта бошад (масалан http ё https)
   if (/^(https?:|blob:|data:)/.test(imageName)) return imageName;
-  
-  // Дар акси ҳол, номи файлро ба IMAGE_URL мепайвандад
-  // .replace(/^\//, '') барои тоза кардани слэш аз аввали номи файл (агар бошад)
   return `${IMAGE_URL}${imageName.replace(/^\//, '')}`;
 };
 
 export interface ProductImage {
   id: number;
   imageUrl?: string;
-  imageName?: string; 
+  imageName?: string;
 }
 
 export interface Product {
@@ -79,31 +70,30 @@ export interface FetchProductsParams {
   productName?: string;
 }
 
-function getToken(state: RootState) {
-  return state.auth.token ?? '';
-}
-
 /* ── Thunks ── */
 
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
-  async (params: FetchProductsParams, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
-    const q = new URLSearchParams();
-    if (params.pageNumber) q.set('PageNumber', String(params.pageNumber));
-    if (params.pageSize)   q.set('PageSize',   String(params.pageSize));
-    if (params.productName) q.set('ProductName', params.productName);
-
+  async (params: FetchProductsParams, { rejectWithValue }) => {
+    const q: Record<string, string | number> = {};
+    if (params.pageNumber) q.PageNumber = params.pageNumber;
+    if (params.pageSize)   q.PageSize   = params.pageSize;
+    if (params.productName) q.ProductName = params.productName;
     try {
-      const res = await fetch(`${BASE}/Product/get-products?${q}`, {
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      }); 
-      if (!res.ok) throw new Error('Failed to fetch products');
-      const json = await res.json();
-      const data  = json.data ?? json;
-      const list: Product[] = Array.isArray(data) ? data : data.items ?? data.products ?? [];
-      const totalCount = data.totalRecords ?? data.totalCount ?? json.totalRecords ?? json.totalCount ?? json.total ?? list.length;
-      return { products: list, total: totalCount as number };
+      const json = await axiosInstance.get<Record<string, unknown>>('/Product/get-products', q);
+      const data = (json.data ?? json) as Record<string, unknown> | Product[];
+      const list: Product[] = Array.isArray(data)
+        ? (data as Product[])
+        : (((data as Record<string, unknown>).items ?? (data as Record<string, unknown>).products ?? []) as Product[]);
+      const d = data as Record<string, unknown>;
+      const totalCount = (
+        d.totalRecords ?? d.totalCount ?? d.totalRecord ??
+        (json as Record<string, unknown>).totalRecord ??
+        (json as Record<string, unknown>).totalRecords ??
+        (json as Record<string, unknown>).total ??
+        list.length
+      ) as number;
+      return { products: list, total: totalCount };
     } catch (err: unknown) {
       return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
     }
@@ -112,14 +102,9 @@ export const fetchProducts = createAsyncThunk(
 
 export const deleteProduct = createAsyncThunk(
   'products/deleteProduct',
-  async (id: number, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (id: number, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Product/delete-product?id=${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-      if (!res.ok) throw new Error('Failed to delete product');
+      await axiosInstance.delete('/Product/delete-product', { id });
       return id;
     } catch (err: unknown) {
       return rejectWithValue(err instanceof Error ? err.message : 'Delete failed');
@@ -129,110 +114,58 @@ export const deleteProduct = createAsyncThunk(
 
 export const addProduct = createAsyncThunk(
   'products/addProduct',
-  async (formData: FormData, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (formData: FormData, { rejectWithValue }) => {
+    console.log('[addProduct] token from localStorage:', localStorage.getItem('token') ? `${localStorage.getItem('token')!.slice(0, 20)}…` : 'MISSING');
     try {
-      const res = await fetch(`${BASE}/Product/add-product`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Failed to add product' }));
-        throw new Error(err.message || `Server error ${res.status}`);
-      }
-      const json = await res.json();
+      const json = await axiosInstance.postForm<Record<string, unknown>>('/Product/add-product', formData);
       const created = (json.data ?? json) as Product;
 
       if (created?.id) {
         try {
-          const refreshRes = await fetch(`${BASE}/Product/get-product-by-id?id=${created.id}`, {
-            headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-          });
-          if (refreshRes.ok) {
-            const refreshJson = await refreshRes.json();
-            return (refreshJson.data ?? refreshJson) as Product;
-          }
+          const refreshJson = await axiosInstance.get<Record<string, unknown>>('/Product/get-product-by-id', { id: created.id });
+          return ((refreshJson as Record<string, unknown>).data ?? refreshJson) as Product;
         } catch {
+          // fall through to return created
         }
       }
 
       return created;
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Failed to add product');
+      const msg = err instanceof Error ? err.message : 'Failed to add product';
+      if (msg.includes('403')) return rejectWithValue('Access denied: Admin role required');
+      return rejectWithValue(msg);
     }
   }
 );
 
+export interface UpdateProductParams {
+  Id: number;
+  ProductName: string;
+  Code?: string;
+  Description?: string;
+  Price: number;
+  DiscountPrice?: number;
+  HasDiscount: boolean;
+  Quantity: number;
+  SubCategoryId?: number;
+  BrandId?: number;
+  ColorId?: number;
+  Size?: string;
+  Weight?: string;
+}
+
 export const updateProduct = createAsyncThunk(
   'products/updateProduct',
-  async (formData: FormData, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
-    
-    const id = formData.get('id') || formData.get('Id');
-    const productName = formData.get('productName') || formData.get('ProductName');
-    const description = formData.get('description') || formData.get('Description');
-    const price = formData.get('price') || formData.get('Price');
-    const quantity = formData.get('quantity') || formData.get('Quantity');
-    const brandId = formData.get('brandId') || formData.get('BrandId');
-    const colorId = formData.get('colorId') || formData.get('ColorId');
-    const subCategoryId = formData.get('subCategoryId') || formData.get('SubCategoryId');
-    const categoryId = formData.get('categoryId') || formData.get('CategoryId');
-    const code = formData.get('code') || formData.get('Code');
-    const weight = formData.get('weight') || formData.get('Weight');
-    const size = formData.get('size') || formData.get('Size');
-    const hasDiscount = formData.get('hasDiscount') || formData.get('HasDiscount');
-    const discountPrice = formData.get('discountPrice') || formData.get('DiscountPrice');
-
-    const jsonBody: Record<string, any> = {
-      Id: id ? Number(id) : 0,
-      ProductName: productName ? String(productName) : '',
-      Description: description ? String(description) : '',
-      Price: price ? Number(price) : 0,
-      Quantity: quantity ? Number(quantity) : 0,
-      CategoryId: categoryId ? Number(categoryId) : 0,
-      Code: code ? String(code) : '',
-      HasDiscount: hasDiscount === 'true' || true,
-    };
-
-    if (brandId && Number(brandId) > 0) jsonBody.BrandId = Number(brandId);
-    if (colorId && Number(colorId) > 0) jsonBody.ColorId = Number(colorId);
-    if (subCategoryId && Number(subCategoryId) > 0) jsonBody.SubCategoryId = Number(subCategoryId);
-    
-    if (weight && String(weight).trim() !== '') jsonBody.Weight = String(weight);
-    if (size && String(size).trim() !== '') jsonBody.Size = String(size);
-    if (discountPrice && Number(discountPrice) > 0) jsonBody.DiscountPrice = Number(discountPrice);
-
+  async (params: UpdateProductParams, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Product/update-product`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          accept: '*/*',
-        },
-        body: JSON.stringify(jsonBody), 
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => null);
-        console.error("Сервер хатогӣ дод:", errJson);
-        
-        let errorMsg = 'Failed to update product';
-        if (errJson) {
-          if (errJson.errors) {
-            errorMsg = Object.values(errJson.errors).flat().join(' | ');
-          } else if (errJson.message) {
-            errorMsg = Array.isArray(errJson.message) ? errJson.message.join(' | ') : errJson.message;
-          }
-        }
-        throw new Error(errorMsg);
-      }
-      
-      const json = await res.json();
-      return (json.data ?? json) as Product;
+      const json = await axiosInstance.put<Record<string, unknown>>('/Product/update-product', undefined, params as unknown as Record<string, string | number | boolean | null | undefined>);
+      return ((json as Record<string, unknown>).data ?? json) as Product;
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Failed to update product');
+      const msg = err instanceof Error ? err.message : 'Failed to update product';
+      console.error('[updateProduct] error:', msg);
+      if (msg.includes('403')) return rejectWithValue('Access denied: Admin role required');
+      if (msg.includes('401')) return rejectWithValue('Unauthorized: please login again');
+      return rejectWithValue(msg);
     }
   }
 );
@@ -263,8 +196,7 @@ const productsSlice = createSlice({
       .addCase(updateProduct.fulfilled, (s, a) => {
         s.addLoading = false;
         s.addSuccess = true;
-        const updated = a.payload;
-        s.items = s.items.map(item => item.id === updated.id ? updated : item);
+        s.items = s.items.map(item => item.id === a.payload.id ? a.payload : item);
       })
       .addCase(updateProduct.rejected,  (s, a) => { s.addLoading = false; s.addError = a.payload as string; });
   },

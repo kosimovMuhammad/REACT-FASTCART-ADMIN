@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { jwtDecode } from 'jwt-decode';
 import type { RootState } from './index';
 
-const BASE = 'https://fastcard-1-o23z.onrender.com/api';
+const BASE = import.meta.env.VITE_API_URL as string;
 
 export interface UserProfile {
   id: number;

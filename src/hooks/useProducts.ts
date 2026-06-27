@@ -56,7 +56,7 @@ export function useProducts(): ProductsResponse {
         if (params.productName) query.set('ProductName', params.productName);
 
         const res = await fetch(
-          `https://fastcard-1-o23z.onrender.com/api/Product/get-products?${query}`,
+          `${import.meta.env.VITE_API_URL}/Product/get-products?${query}`,
           {
             headers: {
               Authorization: token ? `Bearer ${token}` : '',

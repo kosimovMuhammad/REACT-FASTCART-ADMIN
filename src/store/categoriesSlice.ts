@@ -1,44 +1,17 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import type { RootState } from './index';
-import type { FetchProductsParams } from './productsSlice';
+import axiosInstance from '@/api/axiosInstance';
 
-const BASE = 'https://fastcard-1-o23z.onrender.com/api';
-
-export interface SubCategory { 
-  id: number; 
-  subCategoryName: string; 
-  categoryId: number; 
-}
-
-export interface Product {
+export interface SubCategory {
   id: number;
-  productName: string;
-  code: string;
-  description: string;
-  price: number;
-  discountPrice: number | null;
-  hasDiscount: boolean;
-  quantity: number;
-  weight: string | null;
-  size: string | null;
-  brandId: number | null;
-  brandName?: string;       
-  colorId: number | null;
-  colorName?: string;       
-  subCategoryId: number | null;
-  subCategoryName?: string; 
+  subCategoryName: string;
   categoryId: number;
-  categoryName: string;
-  image: string | null;
-  images: string[] | null;
-  rating?: number;          
 }
 
-export interface Category { 
-  id: number; 
-  categoryName: string; 
-  categoryImage?: string | null; 
-  subCategories: SubCategory[]; 
+export interface Category {
+  id: number;
+  categoryName: string;
+  categoryImage?: string | null;
+  subCategories: SubCategory[];
 }
 
 interface CategoriesState {
@@ -52,6 +25,12 @@ interface CategoriesState {
   editError: string | null;
   deleteLoading: boolean;
   deleteError: string | null;
+  subCatAddLoading: boolean;
+  subCatAddError: string | null;
+  subCatEditLoading: boolean;
+  subCatEditError: string | null;
+  subCatDeleteLoading: boolean;
+  subCatDeleteError: string | null;
 }
 
 const initialState: CategoriesState = {
@@ -65,142 +44,116 @@ const initialState: CategoriesState = {
   editError: null,
   deleteLoading: false,
   deleteError: null,
+  subCatAddLoading: false,
+  subCatAddError: null,
+  subCatEditLoading: false,
+  subCatEditError: null,
+  subCatDeleteLoading: false,
+  subCatDeleteError: null,
 };
 
-function getToken(state: RootState) {
-  return state.auth.token ?? '';
-}
-
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  return 'Unknown error occurred';
-};
-
+const toMsg = (err: unknown) => err instanceof Error ? err.message : 'Unknown error occurred';
 
 export const fetchCategories = createAsyncThunk(
   'categories/fetchCategories',
-  async (_, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Category/get-categories`, {
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const json = await res.json();
+      const json = await axiosInstance.get<Record<string, unknown>>('/Category/get-categories');
       const data = json.data ?? json;
       return Array.isArray(data) ? (data as Category[]) : [];
     } catch (err: unknown) {
-      return rejectWithValue(getErrorMessage(err));
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const fetchSubCategories = createAsyncThunk(
   'categories/fetchSubCategories',
-  async (categoryId: number, { getState,  }) => {
-    const state = getState() as RootState;
-    const token = getToken(state);
-    
+  async (categoryId: number) => {
     try {
-      const res = await fetch(`${BASE}/SubCategory/get-subcategories?categoryId=${categoryId}`, {
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-
-      if (res.status === 404) {
-        return []; 
-      }
-
-      if (!res.ok) throw new Error('Failed to fetch subcategories');
-      
-      const json = await res.json();
+      const json = await axiosInstance.get<Record<string, unknown>>('/SubCategory/get-subcategories', { categoryId });
       const data = json.data ?? json;
       return Array.isArray(data) ? (data as SubCategory[]) : [];
-    } catch (err: unknown) {
-      // Ба ҷои reject, массиви холӣ медиҳем, то интерфейс вайрон нашавад
+    } catch {
       return [];
-    }
-  }
-);
-
-export const fetchProducts = createAsyncThunk(
-  'products/fetchProducts',
-  async (params: FetchProductsParams, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
-    const q = new URLSearchParams();
-    
-    if (params.pageNumber) q.set('PageNumber', String(params.pageNumber));
-    if (params.pageSize)   q.set('PageSize',   String(params.pageSize));
-    if (params.productName) q.set('ProductName', params.productName);
-
-    try {
-      const res = await fetch(`${BASE}/Product/get-products?${q}`, {
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      }); 
-      if (!res.ok) throw new Error('Failed to fetch products');
-      
-      const json = await res.json();
-      const list: Product[] = json.data?.products ?? [];
-      const totalCount = json.data?.totalRecords ?? list.length;
-      
-      return { products: list, total: totalCount };
-    } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
     }
   }
 );
 
 export const addCategory = createAsyncThunk(
   'categories/addCategory',
-  async (formData: FormData, { getState, dispatch, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (formData: FormData, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Category/add-category`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Failed to add category');
+      await axiosInstance.postForm('/Category/add-category', formData);
       dispatch(fetchCategories());
       return true;
     } catch (err: unknown) {
-      return rejectWithValue(getErrorMessage(err));
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const updateCategory = createAsyncThunk(
   'categories/updateCategory',
-  async (formData: FormData, { getState, dispatch, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (formData: FormData, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Category/update-category`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-        body: formData,
-      });
-      if (!res.ok) throw new Error('Failed to update category');
+      await axiosInstance.putForm('/Category/update-category', formData);
       dispatch(fetchCategories());
       return true;
     } catch (err: unknown) {
-      return rejectWithValue(getErrorMessage(err));
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const deleteCategory = createAsyncThunk(
   'categories/deleteCategory',
-  async (id: number, { getState, dispatch, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (id: number, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Category/delete-category?id=${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-      if (!res.ok) throw new Error('Failed to delete category');
+      await axiosInstance.delete('/Category/delete-category', { id });
       dispatch(fetchCategories());
       return id;
     } catch (err: unknown) {
-      return rejectWithValue(getErrorMessage(err));
+      return rejectWithValue(toMsg(err));
+    }
+  }
+);
+
+export const addSubCategory = createAsyncThunk(
+  'categories/addSubCategory',
+  async (params: { SubCategoryName: string; CategoryId: number }, { dispatch, rejectWithValue }) => {
+    try {
+      await axiosInstance.post('/SubCategory/add-sub-category', undefined, params);
+      dispatch(fetchCategories());
+      return true;
+    } catch (err: unknown) {
+      return rejectWithValue(toMsg(err));
+    }
+  }
+);
+
+export const updateSubCategory = createAsyncThunk(
+  'categories/updateSubCategory',
+  async (params: { Id: number; SubCategoryName: string; CategoryId: number }, { dispatch, rejectWithValue }) => {
+    try {
+      await axiosInstance.put('/SubCategory/update-sub-category', undefined, params);
+      dispatch(fetchCategories());
+      return true;
+    } catch (err: unknown) {
+      return rejectWithValue(toMsg(err));
+    }
+  }
+);
+
+export const deleteSubCategory = createAsyncThunk(
+  'categories/deleteSubCategory',
+  async (id: number, { dispatch, rejectWithValue }) => {
+    try {
+      await axiosInstance.delete('/SubCategory/delete-sub-category', { id });
+      dispatch(fetchCategories());
+      return id;
+    } catch (err: unknown) {
+      return rejectWithValue(toMsg(err));
     }
   }
 );
@@ -211,9 +164,12 @@ const categoriesSlice = createSlice({
   name: 'categories',
   initialState,
   reducers: {
-    clearAddError:    (s) => { s.addError = null; },
-    clearEditError:   (s) => { s.editError = null; },
-    clearDeleteError: (s) => { s.deleteError = null; },
+    clearAddError:          (s) => { s.addError = null; },
+    clearEditError:         (s) => { s.editError = null; },
+    clearDeleteError:       (s) => { s.deleteError = null; },
+    clearSubCatAddError:    (s) => { s.subCatAddError = null; },
+    clearSubCatEditError:   (s) => { s.subCatEditError = null; },
+    clearSubCatDeleteError: (s) => { s.subCatDeleteError = null; },
   },
   extraReducers: (builder) => {
     builder
@@ -235,9 +191,24 @@ const categoriesSlice = createSlice({
 
       .addCase(deleteCategory.pending,   (s) => { s.deleteLoading = true; s.deleteError = null; })
       .addCase(deleteCategory.fulfilled, (s) => { s.deleteLoading = false; })
-      .addCase(deleteCategory.rejected,  (s, a) => { s.deleteLoading = false; s.deleteError = a.payload as string; });
+      .addCase(deleteCategory.rejected,  (s, a) => { s.deleteLoading = false; s.deleteError = a.payload as string; })
+
+      .addCase(addSubCategory.pending,    (s) => { s.subCatAddLoading = true; s.subCatAddError = null; })
+      .addCase(addSubCategory.fulfilled,  (s) => { s.subCatAddLoading = false; })
+      .addCase(addSubCategory.rejected,   (s, a) => { s.subCatAddLoading = false; s.subCatAddError = a.payload as string; })
+
+      .addCase(updateSubCategory.pending,   (s) => { s.subCatEditLoading = true; s.subCatEditError = null; })
+      .addCase(updateSubCategory.fulfilled, (s) => { s.subCatEditLoading = false; })
+      .addCase(updateSubCategory.rejected,  (s, a) => { s.subCatEditLoading = false; s.subCatEditError = a.payload as string; })
+
+      .addCase(deleteSubCategory.pending,   (s) => { s.subCatDeleteLoading = true; s.subCatDeleteError = null; })
+      .addCase(deleteSubCategory.fulfilled, (s) => { s.subCatDeleteLoading = false; })
+      .addCase(deleteSubCategory.rejected,  (s, a) => { s.subCatDeleteLoading = false; s.subCatDeleteError = a.payload as string; });
   },
 });
 
-export const { clearAddError, clearEditError, clearDeleteError } = categoriesSlice.actions;
+export const {
+  clearAddError, clearEditError, clearDeleteError,
+  clearSubCatAddError, clearSubCatEditError, clearSubCatDeleteError,
+} = categoriesSlice.actions;
 export default categoriesSlice.reducer;

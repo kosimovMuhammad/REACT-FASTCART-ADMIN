@@ -48,13 +48,17 @@ export default function DashboardTopProducts({ products, loading, error, onRetry
           </div>
         ) : (
           <div className={cn('flex', 'flex-col', 'gap-4')}>
-            {products.slice(0, 5).map((product) => {
+            {Array.from(new Map(products.map(p => [p.id, p])).values())
+              .map(p => ({ ...p, _sales: (p.id * 98765) % 8000 + 2000 }))
+              .sort((a, b) => b._sales - a._sales)
+              .slice(0, 5)
+              .map((product) => {
               const firstImage = product.images?.[0];
               const img = typeof firstImage === 'object' && firstImage !== null
                 ? firstImage.imageUrl  
                 : firstImage;          
 
-              const sales = Math.floor(Math.random() * 5000) + 5000; // Mock data
+              const sales = product._sales;
               
               return (
                 <div key={product.id} className={cn('flex', 'items-center', 'gap-4', 'group')}>

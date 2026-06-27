@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { RootState } from './index';
-
-const BASE = 'https://fastcard-1-o23z.onrender.com/api';
+import axiosInstance from '@/api/axiosInstance';
 
 export interface Color { id: number; colorName: string; }
 
@@ -11,50 +9,75 @@ interface ColorsState {
   error: string | null;
   addLoading: boolean;
   addError: string | null;
+  editLoading: boolean;
+  editError: string | null;
+  deleteLoading: boolean;
+  deleteError: string | null;
 }
 
 const initialState: ColorsState = {
-  colors: [], loading: false, error: null, addLoading: false, addError: null,
+  colors: [],
+  loading: false,
+  error: null,
+  addLoading: false,
+  addError: null,
+  editLoading: false,
+  editError: null,
+  deleteLoading: false,
+  deleteError: null,
 };
+
+const toMsg = (err: unknown) => err instanceof Error ? err.message : 'Unknown error';
 
 export const fetchColors = createAsyncThunk(
   'colors/fetchColors',
-  async (_, { getState, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token ?? '';
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Color/get-colors`, {
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-      if (!res.ok) throw new Error('Failed to fetch colors');
-      const json = await res.json();
+      const json = await axiosInstance.get<Record<string, unknown>>('/Color/get-colors', { PageSize: 200 });
       const data = json.data ?? json;
-      return Array.isArray(data) ? (data as Color[]) : [];
+      const list = Array.isArray(data) ? data : ((data as Record<string, unknown>).items ?? (data as Record<string, unknown>).colors ?? []);
+      return list as Color[];
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const addColor = createAsyncThunk(
   'colors/addColor',
-  async (colorName: string, { getState, dispatch, rejectWithValue }) => {
-    const token = (getState() as RootState).auth.token ?? '';
+  async (colorName: string, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Color/add-color`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          accept: '*/*',
-        },
-        body: JSON.stringify({ colorName }),
-      });
-      if (!res.ok) throw new Error('Failed to add color');
-      const json = await res.json();
+      const json = await axiosInstance.post<Record<string, unknown>>('/Color/add-color', undefined, { ColorName: colorName });
       dispatch(fetchColors());
       return (json.data ?? json) as Color;
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
+      return rejectWithValue(toMsg(err));
+    }
+  }
+);
+
+export const updateColor = createAsyncThunk(
+  'colors/updateColor',
+  async ({ id, colorName }: { id: number; colorName: string }, { dispatch, rejectWithValue }) => {
+    try {
+      await axiosInstance.put('/Color/update-color', undefined, { Id: id, ColorName: colorName });
+      dispatch(fetchColors());
+      return { id, colorName };
+    } catch (err: unknown) {
+      return rejectWithValue(toMsg(err));
+    }
+  }
+);
+
+export const deleteColor = createAsyncThunk(
+  'colors/deleteColor',
+  async (id: number, { dispatch, rejectWithValue }) => {
+    try {
+      await axiosInstance.delete('/Color/delete-color', { id });
+      dispatch(fetchColors());
+      return id;
+    } catch (err: unknown) {
+      return rejectWithValue(toMsg(err));
     }
   }
 );
@@ -63,18 +86,29 @@ const colorsSlice = createSlice({
   name: 'colors',
   initialState,
   reducers: {
-    clearAddError: (s) => { s.addError = null; },
+    clearAddError:    (s) => { s.addError = null; },
+    clearEditError:   (s) => { s.editError = null; },
+    clearDeleteError: (s) => { s.deleteError = null; },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchColors.pending,   (s) => { s.loading = true; })
+      .addCase(fetchColors.pending,   (s) => { s.loading = true; s.error = null; })
       .addCase(fetchColors.fulfilled, (s, a) => { s.loading = false; s.colors = a.payload; })
       .addCase(fetchColors.rejected,  (s, a) => { s.loading = false; s.error = a.payload as string; })
+
       .addCase(addColor.pending,   (s) => { s.addLoading = true; s.addError = null; })
       .addCase(addColor.fulfilled, (s) => { s.addLoading = false; })
-      .addCase(addColor.rejected,  (s, a) => { s.addLoading = false; s.addError = a.payload as string; });
+      .addCase(addColor.rejected,  (s, a) => { s.addLoading = false; s.addError = a.payload as string; })
+
+      .addCase(updateColor.pending,   (s) => { s.editLoading = true; s.editError = null; })
+      .addCase(updateColor.fulfilled, (s) => { s.editLoading = false; })
+      .addCase(updateColor.rejected,  (s, a) => { s.editLoading = false; s.editError = a.payload as string; })
+
+      .addCase(deleteColor.pending,   (s) => { s.deleteLoading = true; s.deleteError = null; })
+      .addCase(deleteColor.fulfilled, (s) => { s.deleteLoading = false; })
+      .addCase(deleteColor.rejected,  (s, a) => { s.deleteLoading = false; s.deleteError = a.payload as string; });
   },
 });
 
-export const { clearAddError } = colorsSlice.actions;
+export const { clearAddError, clearEditError, clearDeleteError } = colorsSlice.actions;
 export default colorsSlice.reducer;

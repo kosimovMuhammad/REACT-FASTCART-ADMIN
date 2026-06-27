@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { RootState, AppDispatch } from '@/store';
 import { addProduct, clearAddSuccess, fetchProducts } from '@/store/productsSlice';
-import { fetchCategories, fetchSubCategories } from '@/store/categoriesSlice';
+import { fetchCategories } from '@/store/categoriesSlice';
 import { fetchBrands } from '@/store/brandsSlice';
 import { fetchColors } from '@/store/colorsSlice';
 import ColorModal from '@/components/modals/ColorModal';
@@ -27,7 +28,7 @@ export default function AddProduct() {
   const descRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { categories, subCategories } = useSelector((s: RootState) => s.categories);
+  const { categories } = useSelector((s: RootState) => s.categories);
   const { brands } = useSelector((s: RootState) => s.brands);
   const { colors } = useSelector((s: RootState) => s.colors);
   const { addLoading, addSuccess, addError } = useSelector((s: RootState) => s.products);
@@ -36,6 +37,11 @@ export default function AddProduct() {
   const [code, setCode] = useState('');
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [subCatId, setSubCatId] = useState<number | ''>('');
+
+  const subCategories = useMemo(
+    () => categories.find(c => c.id === Number(categoryId))?.subCategories ?? [],
+    [categories, categoryId]
+  );
   const [brandId, setBrandId] = useState<number | ''>('');
   const [colorIds, setColorIds] = useState<number[]>([]);
   const [price, setPrice] = useState<number | ''>('');
@@ -58,11 +64,8 @@ export default function AddProduct() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (categoryId) {
-      setSubCatId('');
-      dispatch(fetchSubCategories(Number(categoryId)));
-    }
-  }, [categoryId, dispatch]);
+    setSubCatId('');
+  }, [categoryId]);
 
   useEffect(() => {
     if (addSuccess) {
@@ -72,11 +75,27 @@ export default function AddProduct() {
     }
   }, [addSuccess, dispatch, navigate]);
 
+  useEffect(() => {
+    if (addError === 'Access denied: Admin role required') {
+      toast.error('Access denied: Admin role required');
+    }
+  }, [addError]);
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!productName.trim()) e.productName = 'Product name is required';
     if (price === '' || Number(price) <= 0) e.price = 'Valid price is required';
+    if (!categoryId) e.categoryId = 'Category is required';
+    if (!subCatId) e.subCatId = 'Sub-category is required';
+    if (!brandId) e.brandId = 'Brand is required';
+    if (colorIds.length === 0) e.colorId = 'At least one color is required';
+    if (images.length === 0) e.images = 'At least one image is required';
+    if (!code.trim()) e.code = 'Product code is required';
+    
     setErrors(e);
+    if (Object.keys(e).length > 0) {
+      toast.error('Please fill in all required fields');
+    }
     return Object.keys(e).length === 0;
   };
 
@@ -101,10 +120,10 @@ export default function AddProduct() {
     
     if (quantity !== '') fd.append('Quantity', String(quantity));
     
-    if (categoryId) fd.append('CategoryId', String(categoryId));
-    if (subCatId) fd.append('SubCategoryId', String(subCatId));
+    fd.append('CategoryId', String(categoryId || 0));
+    fd.append('SubCategoryId', String(subCatId || 0));
+    fd.append('ColorId', String(colorIds[0] ?? 0));
     if (brandId) fd.append('BrandId', String(brandId));
-    if (colorIds.length > 0) fd.append('ColorId', String(colorIds[0]));
     
     const sizeOpt = options.find(o => o.name.toLowerCase() === 'size');
     const weightOpt = options.find(o => o.name.toLowerCase() === 'weight');
@@ -190,6 +209,10 @@ export default function AddProduct() {
             categories={categories}
             subCategories={subCategories}
             brands={brands}
+            codeError={errors.code}
+            categoryIdError={errors.categoryId}
+            subCatIdError={errors.subCatId}
+            brandIdError={errors.brandId}
           />
           
           <ProductPricing
@@ -229,6 +252,7 @@ export default function AddProduct() {
             handleFiles={handleFiles}
             fileRef={fileRef}
             removeNewImage={(i) => setImages(p => p.filter((_, idx) => idx !== i))}
+            imagesError={errors.images}
           />
 
           <ProductSidebar
@@ -245,6 +269,7 @@ export default function AddProduct() {
               setTagInput('');
             }}
             removeTag={(t) => setTags(p => p.filter(x => x !== t))}
+            colorIdError={errors.colorId}
           />
         </div>
       </div>

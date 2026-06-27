@@ -1,16 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store';
-import Layout      from '@/Layout/Layout';
-import Login       from '@/pages/Login';
-import Dashboard   from '@/pages/Dashboard';
-import Products    from '@/pages/Products';
-import AddProduct  from '@/pages/AddProduct';
-import EditProduct from '@/pages/EditProduct';
-import Orders      from '@/pages/Orders';
-import Categories  from '@/pages/Categories';
-import Colors      from '@/pages/Colors';
-import Other       from '@/pages/Other';
+
+const Layout         = lazy(() => import('@/Layout/Layout'));
+const Login          = lazy(() => import('@/pages/Login'));
+const Dashboard      = lazy(() => import('@/pages/Dashboard'));
+const Products       = lazy(() => import('@/pages/Products'));
+const AddProduct     = lazy(() => import('@/pages/AddProduct'));
+const EditProduct    = lazy(() => import('@/pages/EditProduct'));
+const Orders         = lazy(() => import('@/pages/Orders'));
+const Categories     = lazy(() => import('@/pages/Categories'));
+const SubCategories  = lazy(() => import('@/pages/SubCategories'));
+const Colors         = lazy(() => import('@/pages/Colors'));
+const Banners        = lazy(() => import('@/pages/Banners'));
+const Other          = lazy(() => import('@/pages/Other'));
+const Users          = lazy(() => import('@/pages/Users'));
+const NotFound       = lazy(() => import('@/pages/NotFound'));
+
+function LoadingSpinner() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-white dark:bg-zinc-950">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+    </div>
+  );
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const ok = useSelector((s: RootState) => s.auth.isAuthenticated);
@@ -25,22 +39,40 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <PublicRoute><Login /></PublicRoute>,
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PublicRoute><Login /></PublicRoute>
+      </Suspense>
+    ),
   },
   {
     path: '/',
-    element: <PrivateRoute><Layout /></PrivateRoute>,
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <PrivateRoute><Layout /></PrivateRoute>
+      </Suspense>
+    ),
     children: [
-      { index: true,                    element: <Navigate to="/dashboard" replace /> },
-      { path: 'dashboard',              element: <Dashboard /> },
-      { path: 'products',               element: <Products /> },
-      { path: 'products/add',           element: <AddProduct /> },
-      { path: 'products/edit/:id',      element: <EditProduct /> },
-      { path: 'orders',                 element: <Orders /> },
-      { path: 'categories',             element: <Categories /> },
-      { path: 'colors',                 element: <Colors /> },
-      { path: 'other',                  element: <Other /> },
+      { index: true,               element: <Navigate to="/dashboard" replace /> },
+      { path: 'dashboard',         element: <Dashboard /> },
+      { path: 'products',          element: <Products /> },
+      { path: 'products/add',      element: <AddProduct /> },
+      { path: 'products/edit/:id', element: <EditProduct /> },
+      { path: 'orders',            element: <Orders /> },
+      { path: 'categories',        element: <Categories /> },
+      { path: 'subcategories',     element: <SubCategories /> },
+      { path: 'colors',            element: <Colors /> },
+      { path: 'banners',           element: <Banners /> },
+      { path: 'other',             element: <Other /> },
+      { path: 'users',             element: <Users /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
+  {
+    path: '*',
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <NotFound />
+      </Suspense>
+    ),
+  },
 ]);

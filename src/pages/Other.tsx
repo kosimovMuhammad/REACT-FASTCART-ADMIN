@@ -10,12 +10,16 @@ import {
 
 import type { AppDispatch, RootState } from '@/store';
 import { fetchBrands, addBrand, updateBrand, deleteBrand, clearAddError, clearEditError as clearBrandEditError } from '@/store/brandsSlice';
-import { fetchCategories, addCategory, updateCategory, deleteCategory, clearAddError as clearCatAddError, clearEditError as clearCatEditError } from '@/store/categoriesSlice';
-// ИСЛОҲОТ: getImageUrl-ро ворид мекунем, то суроғаи расм дуруст шавад
-import { getImageUrl } from '@/store/productsSlice'; 
+import {
+  fetchCategories, addCategory, updateCategory, deleteCategory,
+  addSubCategory, updateSubCategory, deleteSubCategory,
+  clearAddError as clearCatAddError, clearEditError as clearCatEditError,
+  clearSubCatAddError, clearSubCatEditError,
+} from '@/store/categoriesSlice';
+import { getImageUrl } from '@/store/productsSlice';
 import { cn } from "@/lib/utils";
 
-type Tab = 'categories' | 'brands' | 'banners';
+type Tab = 'categories' | 'brands' | 'subcategories' | 'banners';
 
 const BRAND_ICONS = [Smartphone, Monitor, Watch, Headphones, Camera, Gamepad2, Shirt, ShoppingBag, Tag, Tv, Cpu];
 
@@ -51,10 +55,13 @@ function CategoryModal({ mode, initial, onClose }: CategoryModalProps) {
   useEffect(() => {
     dispatch(clearCatAddError());
     dispatch(clearCatEditError());
+  }, [dispatch]);
+
+  useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [dispatch, onClose]);
+  }, [onClose]);
 
   const loading = mode === 'add' ? addLoading : editLoading;
   const error   = mode === 'add' ? addError   : editError;
@@ -158,6 +165,101 @@ function CategoryModal({ mode, initial, onClose }: CategoryModalProps) {
             {mode === 'add' ? 'Create' : 'Save'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface SubCatFormPanelProps {
+  editTarget: { id: number; subCategoryName: string; categoryId: number } | null;
+  categories: { id: number; categoryName: string }[];
+  onCancel: () => void;
+}
+
+function SubCatFormPanel({ editTarget, categories, onCancel }: SubCatFormPanelProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { subCatAddLoading, subCatAddError, subCatEditLoading, subCatEditError } = useSelector((s: RootState) => s.categories);
+  const [name, setName] = useState('');
+  const [catId, setCatId] = useState<number | ''>('');
+
+  useEffect(() => {
+    if (editTarget) {
+      setName(editTarget.subCategoryName);
+      setCatId(editTarget.categoryId);
+    } else {
+      setName('');
+      setCatId('');
+    }
+    dispatch(clearSubCatAddError());
+    dispatch(clearSubCatEditError());
+  }, [editTarget, dispatch]);
+
+  const mode = editTarget ? 'edit' : 'add';
+  const loading = mode === 'add' ? subCatAddLoading : subCatEditLoading;
+  const error   = mode === 'add' ? subCatAddError   : subCatEditError;
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !catId) return;
+    let result;
+    if (mode === 'add') {
+      result = await dispatch(addSubCategory({ SubCategoryName: name.trim(), CategoryId: Number(catId) }));
+      if (addSubCategory.fulfilled.match(result)) { setName(''); setCatId(''); }
+    } else {
+      result = await dispatch(updateSubCategory({ Id: editTarget!.id, SubCategoryName: name.trim(), CategoryId: Number(catId) }));
+      if (updateSubCategory.fulfilled.match(result)) onCancel();
+    }
+  };
+
+  return (
+    <div className={cn('bg-white', 'dark:bg-zinc-900', 'border', 'border-zinc-200', 'dark:border-zinc-800', 'rounded-xl', 'p-6', 'shadow-sm')}>
+      <h3 className={cn('font-bold', 'text-zinc-900', 'dark:text-white', 'text-lg', 'mb-6')}>
+        {mode === 'add' ? 'Add new subcategory' : 'Edit subcategory'}
+      </h3>
+
+      {error && (
+        <div className={cn('flex', 'items-center', 'gap-2', 'p-3', 'mb-4', 'bg-red-50', 'dark:bg-red-500/10', 'border', 'border-red-200', 'dark:border-red-500/20', 'rounded-lg', 'text-sm', 'text-red-600', 'dark:text-red-400')}>
+          <AlertCircle size={16} />
+          {error}
+        </div>
+      )}
+
+      <input
+        type="text"
+        placeholder="Subcategory name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+        className={cn('w-full', 'rounded-lg', 'border', 'border-zinc-200', 'dark:border-zinc-700', 'px-4', 'py-3', 'text-[14px]', 'bg-white', 'dark:bg-zinc-950', 'dark:text-white', 'focus:outline-none', 'focus:ring-2', 'focus:border-blue-500', 'transition-all', 'mb-4', 'placeholder:text-zinc-400')}
+      />
+
+      <select
+        value={catId}
+        onChange={(e) => setCatId(Number(e.target.value) || '')}
+        className={cn('w-full', 'rounded-lg', 'border', 'border-zinc-200', 'dark:border-zinc-700', 'px-4', 'py-3', 'text-[14px]', 'bg-white', 'dark:bg-zinc-950', 'dark:text-white', 'focus:outline-none', 'focus:ring-2', 'focus:border-blue-500', 'transition-all', 'mb-6')}
+      >
+        <option value="">Select category</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>{c.categoryName}</option>
+        ))}
+      </select>
+
+      <div className={cn('flex', 'justify-end', 'gap-3')}>
+        {mode === 'edit' && (
+          <button
+            onClick={onCancel}
+            className={cn('px-6', 'py-2.5', 'text-sm', 'font-medium', 'text-zinc-700', 'dark:text-zinc-300', 'bg-zinc-100', 'dark:bg-zinc-800', 'rounded-lg', 'hover:bg-zinc-200', 'dark:hover:bg-zinc-700', 'transition-colors')}
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !name.trim() || !catId}
+          className={cn('flex', 'items-center', 'gap-2', 'px-8', 'py-2', 'text-sm', 'font-medium', 'text-white', 'bg-[#2563eb]', 'rounded-lg', 'hover:bg-blue-700', 'transition-colors', 'disabled:opacity-60', 'shadow-sm')}
+        >
+          {loading && <Loader2 size={14} className="animate-spin" />}
+          {mode === 'add' ? 'Create' : 'Save'}
+        </button>
       </div>
     </div>
   );
@@ -435,12 +537,11 @@ function ItemCard({ name, image, onEdit, onDelete }: ItemCardProps) {
         )}
       </div>
       
-      {/* ИСЛОҲОТ: Нишон додани расм агар мавҷуд бошад, вагарна нишонаи стандартиро мемонад */}
-      <div className={cn('text-zinc-700', 'dark:text-zinc-300', 'w-12', 'h-12', 'flex', 'items-center', 'justify-center')}>
+      <div className={cn('w-12', 'h-12', 'rounded-xl', 'flex', 'items-center', 'justify-center', 'bg-zinc-100', 'dark:bg-zinc-800', 'text-zinc-600', 'dark:text-zinc-300', 'overflow-hidden')}>
         {image ? (
-          <img src={getImageUrl(image)} alt={name} className={cn('w-full', 'h-full', 'object-contain')} />
+          <img src={getImageUrl(image)} alt={name} className={cn('w-full', 'h-full', 'object-contain', 'p-1')} />
         ) : (
-          getIcon(name)
+          getIcon(name, 24)
         )}
       </div>
       
@@ -458,19 +559,20 @@ export default function Other() {
   const { brands, loading: brandsLoading } = useSelector((s: RootState) => s.brands);
   const { categories, loading: catLoading } = useSelector((s: RootState) => s.categories);
 
-  const [tab, setTab] = useState<Tab>('brands');
+  const [tab, setTab] = useState<Tab>('categories');
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTarget, setEditTarget] = useState<{ id: number; name: string; type: 'brand' | 'category' } | null>(null);
+  const [subCatEditTarget, setSubCatEditTarget] = useState<{ id: number; subCategoryName: string; categoryId: number } | null>(null);
 
   useEffect(() => {
     dispatch(fetchBrands());
     dispatch(fetchCategories());
   }, [dispatch]);
 
-  useEffect(() => { setSearch(''); }, [tab]);
+  useEffect(() => { setSearch(''); setEditTarget(null); setSubCatEditTarget(null); }, [tab]);
 
-  const filteredBrands = tab === 'brands' 
+  const filteredBrands = tab === 'brands'
     ? brands.filter((b) => b.brandName.toLowerCase().includes(search.toLowerCase()))
     : [];
 
@@ -478,13 +580,30 @@ export default function Other() {
     ? categories.filter((c) => c.categoryName.toLowerCase().includes(search.toLowerCase()))
     : [];
 
+  const allSubCategories = categories.flatMap((cat) =>
+    (cat.subCategories ?? []).map((s) => ({ ...s, categoryName: cat.categoryName }))
+  );
+  const filteredSubCats = tab === 'subcategories'
+    ? allSubCategories.filter((s) =>
+        s.subCategoryName.toLowerCase().includes(search.toLowerCase()) ||
+        s.categoryName.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
+
   const isLoading = tab === 'brands' ? brandsLoading : catLoading;
+
+  const TAB_LABELS: Record<Tab, string> = {
+    categories: t('other.categories'),
+    brands: t('other.brands'),
+    subcategories: 'Subcategories',
+    banners: t('other.banners'),
+  };
 
   return (
     <div className={cn('flex', 'flex-col', 'h-full', 'max-w-6xl', 'mx-auto')}>
       <div className={cn('flex', 'items-center', 'justify-between', 'mb-6')}>
         <div className={cn('flex', 'items-center', 'gap-1', 'bg-white', 'dark:bg-zinc-900', 'border', 'border-zinc-200', 'dark:border-zinc-800', 'rounded-xl', 'p-1', 'shadow-sm')}>
-          {(['categories', 'brands', 'banners'] as Tab[]).map((t_) => (
+          {(['categories', 'brands', 'subcategories', 'banners'] as Tab[]).map((t_) => (
             <button
               key={t_}
               onClick={() => setTab(t_)}
@@ -494,9 +613,7 @@ export default function Other() {
                   : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
               }`}
             >
-              {t_ === 'categories' ? t('other.categories')
-               : t_ === 'brands'     ? t('other.brands')
-               : t('other.banners')}
+              {TAB_LABELS[t_]}
             </button>
           ))}
         </div>
@@ -512,7 +629,7 @@ export default function Other() {
         )}
       </div>
 
-      {tab === 'categories' && (
+      {(tab === 'categories' || tab === 'subcategories') && (
         <div className={cn('relative', 'w-72', 'mb-6')}>
           <Search size={15} className={cn('absolute', 'left-3', 'top-1/2', '-translate-y-1/2', 'text-zinc-400')} />
           <input
@@ -532,42 +649,89 @@ export default function Other() {
               <span>Brands</span>
               <span>Action</span>
             </div>
-            
-            {isLoading ? (
-               <div className={cn('flex', 'justify-center', 'py-16')}><Loader2 className={cn('animate-spin', 'text-blue-500')} /></div>
+            {brandsLoading ? (
+              <div className={cn('flex', 'justify-center', 'py-16')}><Loader2 className={cn('animate-spin', 'text-blue-500')} /></div>
             ) : filteredBrands.length === 0 ? (
-               <div className={cn('flex', 'justify-center', 'py-16', 'text-zinc-400')}>No brands found</div>
+              <div className={cn('flex', 'justify-center', 'py-16', 'text-zinc-400')}>No brands found</div>
             ) : (
-               <div className={cn('flex', 'flex-col')}>
-                 {filteredBrands.map((item) => (
-                   <div key={item.id} className={cn('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-zinc-100', 'dark:border-zinc-800/50')}>
-                     <span className={cn('font-bold', 'text-zinc-900', 'dark:text-zinc-100', 'text-[14px]')}>{item.brandName}</span>
-                     <div className={cn('flex', 'items-center', 'gap-5')}>
-                       <button onClick={() => setEditTarget({ id: item.id, name: item.brandName, type: 'brand' })} className={cn('text-blue-600', 'hover:text-blue-800', 'transition-colors')}>
-                         <Pencil size={18} strokeWidth={2.5} />
-                       </button>
-                       <button onClick={() => { if (confirm('Are you sure you want to delete this brand?')) dispatch(deleteBrand(item.id)); }} className={cn('text-red-500', 'hover:text-red-600', 'transition-colors')}>
-                         <Trash2 size={18} strokeWidth={2.5} />
-                       </button>
-                     </div>
-                   </div>
-                 ))}
-               </div>
+              <div className={cn('flex', 'flex-col')}>
+                {filteredBrands.map((item) => (
+                  <div key={item.id} className={cn('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-zinc-100', 'dark:border-zinc-800/50')}>
+                    <span className={cn('font-bold', 'text-zinc-900', 'dark:text-zinc-100', 'text-[14px]')}>{item.brandName}</span>
+                    <div className={cn('flex', 'items-center', 'gap-5')}>
+                      <button onClick={() => setEditTarget({ id: item.id, name: item.brandName, type: 'brand' })} className={cn('text-blue-600', 'hover:text-blue-800', 'transition-colors')}>
+                        <Pencil size={18} strokeWidth={2.5} />
+                      </button>
+                      <button onClick={() => { if (confirm('Are you sure you want to delete this brand?')) dispatch(deleteBrand(item.id)); }} className={cn('text-red-500', 'hover:text-red-600', 'transition-colors')}>
+                        <Trash2 size={18} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-
           <div>
-            <BrandFormPanel 
-              editTarget={editTarget?.type === 'brand' ? editTarget : null} 
-              onCancel={() => setEditTarget(null)} 
+            <BrandFormPanel
+              editTarget={editTarget?.type === 'brand' ? editTarget : null}
+              onCancel={() => setEditTarget(null)}
             />
           </div>
         </div>
+
+      ) : tab === 'subcategories' ? (
+        <div className={cn('grid', 'grid-cols-1', 'md:grid-cols-[1fr_450px]', 'gap-8', 'mt-2')}>
+          <div>
+            <div className={cn('flex', 'items-center', 'justify-between', 'text-[13px]', 'font-semibold', 'text-zinc-500', 'dark:text-zinc-400', 'pb-3', 'border-b', 'border-zinc-200', 'dark:border-zinc-800')}>
+              <span>Subcategory</span>
+              <span>Action</span>
+            </div>
+            {catLoading ? (
+              <div className={cn('flex', 'justify-center', 'py-16')}><Loader2 className={cn('animate-spin', 'text-blue-500')} /></div>
+            ) : filteredSubCats.length === 0 ? (
+              <div className={cn('flex', 'justify-center', 'py-16', 'text-zinc-400')}>No subcategories found</div>
+            ) : (
+              <div className={cn('flex', 'flex-col')}>
+                {filteredSubCats.map((item) => (
+                  <div key={item.id} className={cn('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-zinc-100', 'dark:border-zinc-800/50')}>
+                    <div>
+                      <span className={cn('font-bold', 'text-zinc-900', 'dark:text-zinc-100', 'text-[14px]')}>{item.subCategoryName}</span>
+                      <span className={cn('ml-2', 'text-xs', 'text-zinc-400', 'dark:text-zinc-500')}>({item.categoryName})</span>
+                    </div>
+                    <div className={cn('flex', 'items-center', 'gap-5')}>
+                      <button
+                        onClick={() => setSubCatEditTarget({ id: item.id, subCategoryName: item.subCategoryName, categoryId: item.categoryId })}
+                        className={cn('text-blue-600', 'hover:text-blue-800', 'transition-colors')}
+                      >
+                        <Pencil size={18} strokeWidth={2.5} />
+                      </button>
+                      <button
+                        onClick={() => { if (confirm('Are you sure you want to delete this subcategory?')) dispatch(deleteSubCategory(item.id)); }}
+                        className={cn('text-red-500', 'hover:text-red-600', 'transition-colors')}
+                      >
+                        <Trash2 size={18} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <SubCatFormPanel
+              editTarget={subCatEditTarget}
+              categories={categories}
+              onCancel={() => setSubCatEditTarget(null)}
+            />
+          </div>
+        </div>
+
       ) : tab === 'banners' ? (
         <div className={cn('grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-8', 'mt-4')}>
           <BannerUploadBlock title="Main sliders" />
           <BannerUploadBlock title="Banner" hasCategories hasTimer />
         </div>
+
       ) : isLoading ? (
         <div className={cn('flex-1', 'flex', 'flex-col', 'items-center', 'justify-center', 'p-16', 'bg-white', 'dark:bg-zinc-900', 'rounded-xl', 'border', 'border-zinc-200', 'dark:border-zinc-800', 'min-h-[300px]')}>
           <Loader2 size={32} className={cn('animate-spin', 'text-blue-500', 'mb-3')} />
@@ -583,7 +747,6 @@ export default function Other() {
             <ItemCard
               key={item.id}
               name={item.categoryName}
-              // ИСЛОҲОТ: Равон кардани расм ба ItemCard
               image={item.categoryImage || item.image}
               onEdit={() => setEditTarget({ id: item.id, name: item.categoryName, type: 'category' })}
               onDelete={() => {

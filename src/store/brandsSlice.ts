@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import type { RootState } from './index';
-
-const BASE = 'https://fastcard-1-o23z.onrender.com/api';
+import axiosInstance from '@/api/axiosInstance';
 
 export interface Brand { id: number; brandName: string; }
 
@@ -29,90 +27,57 @@ const initialState: BrandsState = {
   deleteError: null,
 };
 
-function getToken(state: RootState) {
-  return state.auth.token ?? '';
-}
+const toMsg = (err: unknown) => err instanceof Error ? err.message : 'Unknown error';
 
 export const fetchBrands = createAsyncThunk(
   'brands/fetchBrands',
-  async (_, { getState, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Brand/get-brands?PageSize=200`, {
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-      if (!res.ok) throw new Error('Failed to fetch brands');
-      const json = await res.json();
+      const json = await axiosInstance.get<Record<string, unknown>>('/Brand/get-brands', { PageSize: 200 });
       const data = json.data ?? json;
-      const list = Array.isArray(data) ? data : (data.items ?? data.brands ?? []);
+      const list = Array.isArray(data) ? data : ((data as Record<string, unknown>).items ?? (data as Record<string, unknown>).brands ?? []);
       return list as Brand[];
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const addBrand = createAsyncThunk(
   'brands/addBrand',
-  async (brandName: string, { getState, dispatch, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (brandName: string, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Brand/add-brand`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          accept: '*/*',
-        },
-        body: JSON.stringify({ brandName }),
-      });
-      if (!res.ok) throw new Error('Failed to add brand');
-      const json = await res.json();
+      const json = await axiosInstance.post<Record<string, unknown>>('/Brand/add-brand', undefined, { BrandName: brandName });
       dispatch(fetchBrands());
       return (json.data ?? json) as Brand;
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const updateBrand = createAsyncThunk(
   'brands/updateBrand',
-  async ({ id, brandName }: { id: number; brandName: string }, { getState, dispatch, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async ({ id, brandName }: { id: number; brandName: string }, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Brand/update-brand`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          accept: '*/*',
-        },
-        body: JSON.stringify({ id, brandName }),
-      });
-      if (!res.ok) throw new Error('Failed to update brand');
+      await axiosInstance.put('/Brand/update-brand', undefined, { Id: id, BrandName: brandName });
       dispatch(fetchBrands());
       return { id, brandName };
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
+      return rejectWithValue(toMsg(err));
     }
   }
 );
 
 export const deleteBrand = createAsyncThunk(
   'brands/deleteBrand',
-  async (id: number, { getState, dispatch, rejectWithValue }) => {
-    const token = getToken(getState() as RootState);
+  async (id: number, { dispatch, rejectWithValue }) => {
     try {
-      const res = await fetch(`${BASE}/Brand/delete-brand?id=${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
-      });
-      if (!res.ok) throw new Error('Failed to delete brand');
+      await axiosInstance.delete('/Brand/delete-brand', { id });
       dispatch(fetchBrands());
       return id;
     } catch (err: unknown) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Unknown error');
+      return rejectWithValue(toMsg(err));
     }
   }
 );

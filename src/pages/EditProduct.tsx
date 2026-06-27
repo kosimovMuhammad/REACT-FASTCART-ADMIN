@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { RootState, AppDispatch } from '@/store';
-import { updateProduct, clearAddSuccess, type Product } from '@/store/productsSlice';import { fetchCategories, fetchSubCategories } from '@/store/categoriesSlice';
+import { updateProduct, clearAddSuccess, type Product, type UpdateProductParams } from '@/store/productsSlice';
+import { fetchCategories } from '@/store/categoriesSlice';
 import { fetchBrands } from '@/store/brandsSlice';
 import { fetchColors } from '@/store/colorsSlice';
 import SuccessModal from '@/components/modals/SuccessModal';
@@ -16,7 +17,7 @@ import ProductMedia from './products/components/ProductMedia';
 import ProductSidebar from './products/components/ProductSidebar';
 import { cn } from "@/lib/utils";
 
-const BASE = 'https://fastcard-1-o23z.onrender.com/api';
+const BASE = import.meta.env.VITE_API_URL as string;
 const DEFAULT_OPTIONS: OptionRow[] = [];
 
 export default function EditProduct() {
@@ -26,7 +27,7 @@ export default function EditProduct() {
   const descRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { categories, subCategories } = useSelector((s: RootState) => s.categories);
+  const { categories } = useSelector((s: RootState) => s.categories);
   const { brands } = useSelector((s: RootState) => s.brands);
   const { colors } = useSelector((s: RootState) => s.colors);
   const { addLoading, addSuccess, addError } = useSelector((s: RootState) => s.products);
@@ -37,6 +38,11 @@ export default function EditProduct() {
   const [code, setCode] = useState('');
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [subCatId, setSubCatId] = useState<number | ''>('');
+
+  const subCategories = useMemo(
+    () => categories.find(c => c.id === Number(categoryId))?.subCategories ?? [],
+    [categories, categoryId]
+  );
   const [brandId, setBrandId] = useState<number | ''>('');
   const [colorIds, setColorIds] = useState<number[]>([]);
   const [price, setPrice] = useState<number | ''>('');
@@ -84,18 +90,15 @@ export default function EditProduct() {
         if (data.colorId) setColorIds([data.colorId]);
         if (data.description) setDescriptionHtml(data.description);
 
-        // ИСЛОҲИ ХАТОГӢ: Агар бэкэнд массиви сатрҳо (URL) фиристад, онро ба сохтори ProductImage мувофиқ мекунем
-        if (data.images && data.images.length > 0) {
-          if (typeof data.images[0] === 'string') {
-            // Агар сатр бошанд, ба объект табдил медиҳем (ҳамчун ID худи индексро мегирем ё аз URL)
-            const mappedImages = (data.images as unknown as string[]).map((imgUrl, index) => ({
-              id: index, // ё агар бэкэнд ID-и расмро ҷудогона нафиристад
-              imageUrl: imgUrl
-            }));
-            setExistingImages(mappedImages);
+        const rawImages = data.images ?? [];
+        if (rawImages.length > 0) {
+          if (typeof rawImages[0] === 'string') {
+            setExistingImages((rawImages as unknown as string[]).map((url, i) => ({ id: i, imageUrl: url })));
           } else {
-            setExistingImages(data.images);
+            setExistingImages(rawImages as any[]);
           }
+        } else if (data.image) {
+          setExistingImages([{ id: 0, imageUrl: data.image }]);
         } else {
           setExistingImages([]);
         }
@@ -116,10 +119,12 @@ export default function EditProduct() {
   }, [id, token]);
 
   useEffect(() => {
-    if (categoryId) {
-      dispatch(fetchSubCategories(Number(categoryId)));
-    }
-  }, [categoryId, dispatch]);
+    if (!categoryId || !categories.length) return;
+    const valid = new Set(
+      (categories.find(c => c.id === Number(categoryId))?.subCategories ?? []).map(s => s.id)
+    );
+    setSubCatId(prev => (prev !== '' && !valid.has(Number(prev)) ? '' : prev));
+  }, [categoryId, categories]);
 
   useEffect(() => {
     if (addSuccess) {
@@ -132,61 +137,39 @@ export default function EditProduct() {
     const e: Record<string, string> = {};
     if (!productName.trim()) e.productName = 'Product name is required';
     if (price === '' || Number(price) <= 0) e.price = 'Valid price is required';
-    if (!categoryId) e.categoryId = 'Category is required';
-    
+    if (!subCatId) e.subCatId = 'Sub-category is required';
+    if (!brandId) e.brandId = 'Brand is required';
+    if (colorIds.length === 0) e.colorId = 'At least one color is required';
+    if (!code.trim()) e.code = 'Product code is required';
     setErrors(e);
-    
-    if (Object.keys(e).length > 0) {
-      alert("Илтимос, майдонҳои ҳатмиро дуруст пур кунед!");
-    }
-    
     return Object.keys(e).length === 0;
   };
 
   const handleSave = () => {
     if (!id) return;
     if (!validate()) return;
-    
-    const description = descRef.current?.innerHTML ?? '';
-    const fd = new FormData();
-    
-    fd.append('id', String(id));
-    fd.append('productName', productName.trim());
-    
-    if (code) fd.append('code', code.trim());
-    if (description) fd.append('description', description);
-    
-    fd.append('price', String(price));
-    
-    if (discount !== '' && Number(discount) > 0) {
-      fd.append('discountPrice', String(discount));
-      fd.append('hasDiscount', 'true');
-    } else {
-      fd.append('discountPrice', '0'); 
-      fd.append('hasDiscount', 'false');
-    }
-    
-    fd.append('quantity', quantity !== '' ? String(quantity) : '0');
-    
-    if (categoryId) fd.append('categoryId', String(categoryId));
-    if (subCatId) fd.append('subCategoryId', String(subCatId));
-    if (brandId) fd.append('brandId', String(brandId));
-    if (colorIds.length > 0) fd.append('colorId', String(colorIds[0]));
-    
-    if (hasOptions) {
-      const sizeOpt = options.find(o => o.name.toLowerCase() === 'size');
-      const weightOpt = options.find(o => o.name.toLowerCase() === 'weight');
-      if (sizeOpt?.values.length) fd.append('size', sizeOpt.values.join(','));
-      if (weightOpt?.values.length) fd.append('weight', weightOpt.values.join(','));
-    }
-    
-    if (images && images.length > 0) {
-      images.forEach((img) => {
-        fd.append('images', img);
-      });
-    }
 
-    dispatch(updateProduct(fd as any));
+    const description = descRef.current ? (descRef.current.innerText || descRef.current.textContent || '') : '';
+    const discountNum = discount !== '' ? Number(discount) : 0;
+    const priceNum = Number(price);
+    const hasDiscountVal = discountNum > 0 && discountNum < priceNum;
+
+    const params: UpdateProductParams = {
+      Id: Number(id),
+      ProductName: productName.trim(),
+      Price: priceNum,
+      HasDiscount: hasDiscountVal,
+      Quantity: quantity !== '' ? Number(quantity) : 0,
+    };
+
+    if (code.trim()) params.Code = code.trim();
+    if (description.trim()) params.Description = description.trim();
+    if (hasDiscountVal) params.DiscountPrice = discountNum;
+    if (subCatId) params.SubCategoryId = Number(subCatId);
+    if (brandId) params.BrandId = Number(brandId);
+    if (colorIds.length > 0) params.ColorId = colorIds[0];
+
+    dispatch(updateProduct(params));
   };
 
   const execFormat = (cmd: string) => {
@@ -287,6 +270,10 @@ export default function EditProduct() {
             subCategories={subCategories}
             brands={brands}
             descriptionHtml={descriptionHtml}
+            codeError={errors.code}
+            categoryIdError={errors.categoryId}
+            subCatIdError={errors.subCatId}
+            brandIdError={errors.brandId}
           />
           
           <ProductPricing
@@ -328,6 +315,7 @@ export default function EditProduct() {
             fileRef={fileRef}
             removeNewImage={(i) => setImages(p => p.filter((_, idx) => idx !== i))}
             removeExistingImage={handleDeleteExistingImage}
+            imagesError={errors.images}
           />
 
           <ProductSidebar
@@ -344,6 +332,7 @@ export default function EditProduct() {
               setTagInput('');
             }}
             removeTag={(t) => setTags(p => p.filter(x => x !== t))}
+            colorIdError={errors.colorId}
           />
         </div>
       </div>

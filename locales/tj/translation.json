@@ -1,0 +1,110 @@
+{
+  "common": {
+    "loading": "Боргузорӣ...",
+    "retry": "Такрор кунед",
+    "cancel": "Бекор кунед",
+    "save": "Нигоҳ дорид",
+    "delete": "Ҳазф кунед",
+    "edit": "Таҳрир кунед",
+    "add": "Илова кунед",
+    "search": "Ҷустуҷӯ",
+    "noResults": "Натиҷа ёфт нашуд",
+    "results": "Натиҷаҳо",
+    "outOfStock": "Тамом шудааст",
+    "inStock": "дар захира",
+    "actions": "Амалиёт",
+    "confirm": "Тасдиқ кунед"
+  },
+  "nav": {
+    "dashboard": "Лавҳаи идоракунӣ",
+    "orders": "Фармоишҳо",
+    "products": "Молҳо",
+    "categories": "Категорияҳо",
+    "colors": "Рангҳо",
+    "settings": "Танзимот",
+    "logout": "Баромадан"
+  },
+  "products": {
+    "title": "Молҳо",
+    "subtitle": "Молҳо ва нархҳои худро идора кунед",
+    "addProduct": "Мол илова кунед",
+    "searchPlaceholder": "Ҷустуҷӯи молҳо...",
+    "sortBy": "Мураттаб кунед:",
+    "sortNewest": "Навтарин",
+    "sortOldest": "Қадимтарин",
+    "sortPriceLow": "Нарх: паст-баланд",
+    "sortPriceHigh": "Нарх: баланд-паст",
+    "editSelected": "Интихобшударо таҳрир кунед",
+    "deleteSelected": "Интихобшударо ҳазф кунед",
+    "product": "Мол",
+    "inventory": "Захира",
+    "category": "Категория",
+    "price": "Нарх",
+    "noProductsFound": "Молҳо ёфт нашуданд",
+    "noProductsDesc": "Филтр ё ҷустуҷӯи худро тағйир диҳед.",
+    "loadingProducts": "Молҳо бор карда мешавад...",
+    "deleteConfirm": "Шумо мутмаин ҳастед, ки мехоҳед ҳазф кунед",
+    "deleteMultipleConfirm": "Шумо мутмаин ҳастед, ки мехоҳед {{count}} мол ҳазф кунед?",
+    "uncategorized": "Категория надорад",
+    "totalResults": "{{count}} Натиҷа"
+  },
+  "orders": {
+    "title": "Фармоишҳо",
+    "subtitle": "Фармоишҳои муштариёнро идора ва пайгирӣ кунед.",
+    "noOrders": "Ҳоло фармоиш нест",
+    "noOrdersDesc": "Ҳамаи фармоишҳои оянда дар ин ҷо намоиш дода мешаванд.",
+    "addOrder": "Фармоиш дастӣ илова кунед"
+  },
+  "dashboard": {
+    "title": "Лавҳаи идоракунӣ",
+    "topProducts": "Молҳои пурфурӯш",
+    "recentTransactions": "Амалиётҳои охирин",
+    "seeAll": "Ҳамаро бинед",
+    "totalRevenue": "Даромади умумӣ",
+    "totalOrders": "Фармоишҳои умумӣ",
+    "totalProducts": "Молҳои умумӣ",
+    "totalCustomers": "Муштариёни умумӣ"
+  },
+  "login": {
+    "title": "Воридшавӣ",
+    "subtitle": "Хуш омадед! Маълумоти худро ворид кунед.",
+    "email": "Почтаи электронӣ",
+    "password": "Рамз",
+    "forgotPassword": "Рамзро фаромӯш кардед?",
+    "signIn": "Ворид шавед",
+    "signingIn": "Воридшавӣ...",
+    "invalidCredentials": "Номи корбар ё рамз нодуруст аст."
+  },
+  "categories": {
+    "title": "Категорияҳо",
+    "subtitle": "Категорияҳои мол"
+  },
+  "colors": {
+    "title": "Рангҳо",
+    "subtitle": "Рангҳои мол",
+    "newColor": "Ранги нав",
+    "colorName": "Номи ранг",
+    "colorNamePlaceholder": "масалан, Кабуди торик",
+    "hexCode": "Коди ранг (ихтиёрӣ)",
+    "creating": "Эҷод мешавад...",
+    "createColor": "Ранг эҷод кунед"
+  },
+  "settings": {
+    "title": "Танзимот",
+    "subtitle": "Танзимоти умумӣ"
+  },
+  "other": {
+    "categories": "Категорияҳо",
+    "brands": "Брендҳо",
+    "banners": "Баннерҳо",
+    "addNew": "+ Илова кунед",
+    "bannersComingSoon": "Функсияи баннерҳо ба зудӣ."
+  },
+  "brands": {
+    "addBrand": "Бренд илова кунед",
+    "editBrand": "Брендро таҳрир кунед",
+    "brandName": "Номи бренд",
+    "brandNamePlaceholder": "масалан, Samsung",
+    "create": "Эҷод кунед"
+  }
+}

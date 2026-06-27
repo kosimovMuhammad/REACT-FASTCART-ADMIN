@@ -30,13 +30,16 @@ export default function Login() {
     setError(null);
 
     try {
-      const response = await fetch('https://fastcard-1-o23z.onrender.com/api/Account/login', {
+      const payload = { userName: username.trim(), password };
+      console.log('[Login] payload →', JSON.stringify(payload));
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/Account/login`, {
         method: 'POST',
         headers: {
           accept: '*/*',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userName: username.trim(), password }),
+        body: JSON.stringify(payload),
       });
 
       let token: string | null = null;
