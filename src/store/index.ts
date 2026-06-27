@@ -7,6 +7,7 @@ import colorsReducer     from './colorsSlice';
 import profileReducer    from './profileSlice';
 import bannersReducer    from './bannersSlice';
 import usersReducer      from './usersSlice';
+import ordersReducer     from './ordersSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     profile:    profileReducer,
     banners:    bannersReducer,
     users:      usersReducer,
+    orders:     ordersReducer,
   },
 });
 

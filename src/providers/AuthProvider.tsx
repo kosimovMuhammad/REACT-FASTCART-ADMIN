@@ -21,18 +21,26 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     if (!token) return;
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) throw new Error('Invalid token');
-      const payload = JSON.parse(atob(parts[1]));
-      const exp = payload.exp as number | undefined;
-      if (exp && Date.now() / 1000 > exp) {
+
+    const checkExpiry = () => {
+      try {
+        const parts = token.split('.');
+        if (parts.length !== 3) throw new Error('Invalid token');
+        const payload = JSON.parse(atob(parts[1]));
+        const exp = payload.exp as number | undefined;
+        if (exp && Date.now() / 1000 > exp) {
+          dispatch(logout());
+          navigate('/login', { replace: true });
+        }
+      } catch {
         dispatch(logout());
         navigate('/login', { replace: true });
       }
-    } catch {
-      dispatch(logout());
-    }
+    };
+
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60_000);
+    return () => clearInterval(interval);
   }, [token, dispatch, navigate]);
 
   return <>{children}</>;

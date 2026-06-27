@@ -49,10 +49,18 @@ export default function Login() {
         const resData = await response.json();
 
         if (response.ok) {
-          token =
-            typeof resData === 'string'
-              ? resData
-              : resData.data ?? resData.token ?? resData.accessToken ?? resData.Token ?? null;
+          if (typeof resData === 'string') {
+            token = resData;
+          } else {
+            const candidate = resData.data ?? resData.token ?? resData.accessToken ?? resData.Token;
+            // Handle both flat string and nested object { token: "..." }
+            if (typeof candidate === 'string') {
+              token = candidate;
+            } else if (candidate && typeof candidate === 'object') {
+              const nested = candidate as Record<string, unknown>;
+              token = (nested.token ?? nested.accessToken ?? nested.Token ?? null) as string | null;
+            }
+          }
 
           if (!token) {
             setError('Login failed: no token received from server.');

@@ -4,6 +4,23 @@ function getToken(): string {
   return localStorage.getItem('token') ?? '';
 }
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp as number | undefined;
+    return !!exp && Date.now() / 1000 > exp;
+  } catch {
+    return true;
+  }
+}
+
+function clearSessionAndRedirect() {
+  localStorage.clear();
+  window.location.href = '/login';
+}
+
 async function apiRequest<T>(
   method: string,
   path: string,
@@ -22,6 +39,13 @@ async function apiRequest<T>(
   }
 
   const token = getToken();
+
+  // Redirect to login before even making the request if the token is already expired
+  if (token && isTokenExpired(token)) {
+    clearSessionAndRedirect();
+    throw new Error('Session expired. Please log in again.');
+  }
+
   const headers: Record<string, string> = { accept: '*/*' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (!isFormData && body !== undefined) headers['Content-Type'] = 'application/json';
@@ -33,9 +57,18 @@ async function apiRequest<T>(
   });
 
   if (res.status === 401) {
-    localStorage.clear();
-    window.location.href = '/login';
+    clearSessionAndRedirect();
     throw new Error('Unauthorized');
+  }
+
+  if (res.status === 403) {
+    // Some APIs return 403 for expired tokens instead of 401 — handle both cases
+    const currentToken = getToken();
+    if (!currentToken || isTokenExpired(currentToken)) {
+      clearSessionAndRedirect();
+      throw new Error('Session expired. Please log in again.');
+    }
+    throw new Error('Access denied. You do not have permission to perform this action.');
   }
 
   if (!res.ok) {
